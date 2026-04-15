@@ -196,10 +196,10 @@ export function ReceiptStep({ onComplete }: Props) {
         <>
           <Bubble>
             {items.length} items from <strong>{store}</strong>.
-            {items.filter((i) => i.confidence !== "high").length > 0 && (
+            {items.filter((i) => i.confidence === "low").length > 0 && (
               <>
                 {" "}
-                {items.filter((i) => i.confidence !== "high").length}{" "}
+                {items.filter((i) => i.confidence === "low").length}{" "}
                 I&apos;m less sure about (⚠).
               </>
             )}
@@ -255,7 +255,7 @@ export function ReceiptStep({ onComplete }: Props) {
                 >
                   <span className="text-sm flex-1 truncate flex items-center gap-1">
                     {it.name}
-                    {it.confidence !== "high" && (
+                    {it.confidence === "low" && (
                       <span className="text-warn text-xs">⚠</span>
                     )}
                   </span>
