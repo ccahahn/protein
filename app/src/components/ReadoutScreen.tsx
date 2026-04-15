@@ -318,11 +318,11 @@ function Tile({
         {label}
       </div>
       <div
-        className={`font-display text-2xl leading-none ${
+        className={`font-display leading-none h-10 flex items-center justify-center ${
           ok ? "text-good" : "text-bad"
         }`}
       >
-        {primary}
+        <span className="text-2xl">{primary}</span>
       </div>
       <div className="text-[10px] text-muted mt-1">{sub}</div>
     </div>
@@ -352,7 +352,7 @@ function FractionTile({
         {label}
       </div>
       <div
-        className={`font-display leading-none ${
+        className={`font-display leading-none h-10 flex items-baseline justify-center ${
           ok ? "text-good" : "text-bad"
         }`}
       >
