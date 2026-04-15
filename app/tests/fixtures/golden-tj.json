@@ -1,0 +1,35 @@
+{
+  "_source": "/thinking/golden-test-manual.md — hand-verified nutrition totals for a real Trader Joe's receipt. 18 food items (excluding bag fee). Totals: 14,208 cal · 166 g added sugar · 723 g protein.",
+  "store": "Trader Joe's",
+  "receipt_text_for_reader": "Receipt image lives at protein/thinking/golden-test-receipt.jpg",
+  "items": [
+    { "on_receipt": "SALMON FILLET SKIN OFF", "name": "Salmon fillet (skin off)", "qty": 1, "protein_g": 69, "cal": 664, "added_sugar_g": 0 },
+    { "on_receipt": "GROUND TURKEY", "name": "Ground turkey", "qty": 1, "protein_g": 95, "cal": 750, "added_sugar_g": 0 },
+    { "on_receipt": "ORGANIC BNLS SKNLS CKN T", "name": "Organic boneless skinless chicken thighs", "qty": 1, "protein_g": 109, "cal": 979, "added_sugar_g": 0 },
+    { "on_receipt": "CHICKEN MEATBALLS ABF", "name": "Chicken meatballs (ABF)", "qty": 1, "protein_g": 64, "cal": 600, "added_sugar_g": 0 },
+    { "on_receipt": "BURRATA & PROSCIUTTO FLA", "name": "Burrata & prosciutto flatbread pizza", "qty": 1, "protein_g": 39, "cal": 870, "added_sugar_g": 6 },
+    { "on_receipt": "SAUSAGE CHICKEN SWEET AP", "name": "Sweet apple chicken sausage", "qty": 1, "protein_g": 55, "cal": 600, "added_sugar_g": 25 },
+    { "on_receipt": "SLICED WHITE BREAD", "name": "Sliced white bread", "qty": 1, "protein_g": 44, "cal": 1540, "added_sugar_g": 0 },
+    { "on_receipt": "SPIZZICO DI PIZZA", "name": "Spizzico di pizza cups", "qty": 1, "protein_g": 28, "cal": 670, "added_sugar_g": 5 },
+    { "on_receipt": "FAMILY STYLE MEAT LASAGN", "name": "Family style meat lasagna", "qty": 1, "protein_g": 92, "cal": 1240, "added_sugar_g": 4 },
+    { "on_receipt": "HOT SPICY JALAPENO & CHE", "name": "Hot spicy jalapeño & cheese balls", "qty": 1, "protein_g": 27, "cal": 1260, "added_sugar_g": 9 },
+    { "on_receipt": "CEREAL COCOA & PB PUFFS", "name": "Cereal Cocoa & PB Puffs", "qty": 1, "protein_g": 21, "cal": 1120, "added_sugar_g": 77 },
+    { "on_receipt": "TJ'S CORN FLAKES ORGANIC", "name": "TJ's organic corn flakes", "qty": 1, "protein_g": 24, "cal": 1280, "added_sugar_g": 8 },
+    { "on_receipt": "CUCUMBERS ENGLISH ORG EA", "name": "English cucumber (organic)", "qty": 3, "protein_g": 4, "cal": 49, "added_sugar_g": 0 },
+    { "on_receipt": "ONIONS SWEET JUMBO EA", "name": "Sweet jumbo onion", "qty": 1, "protein_g": 3, "cal": 105, "added_sugar_g": 0 },
+    { "on_receipt": "PEPPER BELL YELLOW XL EA", "name": "Yellow bell pepper (XL)", "qty": 1, "protein_g": 2, "cal": 50, "added_sugar_g": 0 },
+    { "on_receipt": "BANANA EACH 7 @ 0.23", "name": "Bananas (bunch of 7)", "qty": 7, "protein_g": 7, "cal": 770, "added_sugar_g": 0 },
+    { "on_receipt": "FREEZE DRIED BANANA", "name": "Freeze-dried bananas", "qty": 2, "protein_g": 8, "cal": 540, "added_sugar_g": 0 },
+    { "on_receipt": "HAMBURGER BUNS", "name": "Hamburger buns", "qty": 1, "protein_g": 32, "cal": 1120, "added_sugar_g": 32 }
+  ],
+  "totals": {
+    "protein_g": 723,
+    "cal": 14207,
+    "added_sugar_g": 166
+  },
+  "tolerances": {
+    "_comment": "per-item MAE acceptance bounds for the nutrition-estimator. Calibrated against the whole-cart totals at 15% directional per the spec.",
+    "per_item_pct": 0.25,
+    "aggregate_pct": 0.15
+  }
+}

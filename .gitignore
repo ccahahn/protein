@@ -1,0 +1,25 @@
+# Personal / unversioned workspace — real family data, receipt photos,
+# research notes. Kept local only.
+thinking/
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment — never commit keys
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

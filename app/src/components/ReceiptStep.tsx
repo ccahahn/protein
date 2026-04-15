@@ -1,0 +1,236 @@
+"use client";
+import { useRef, useState } from "react";
+import { Bubble } from "./Bubble";
+import { Spinner } from "./Spinner";
+import type { NutritionItem } from "@/lib/types";
+
+type Props = {
+  onComplete: (data: { store: string; items: NutritionItem[]; days: number }) => void;
+};
+
+export function ReceiptStep({ onComplete }: Props) {
+  const [phase, setPhase] = useState<"upload" | "scanning" | "parsed" | "error">("upload");
+  const [error, setError] = useState<string | null>(null);
+  const [store, setStore] = useState<string>("");
+  const [items, setItems] = useState<NutritionItem[]>([]);
+  const [days, setDays] = useState(5);
+  const [dragOver, setDragOver] = useState(false);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [savingIdx, setSavingIdx] = useState<number | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setEditDraft(items[idx].name);
+  };
+  const cancelEdit = () => {
+    setEditingIdx(null);
+    setEditDraft("");
+  };
+  const saveEdit = async (idx: number) => {
+    const newName = editDraft.trim();
+    if (!newName || newName === items[idx].name) {
+      cancelEdit();
+      return;
+    }
+    setSavingIdx(idx);
+    try {
+      const res = await fetch("/api/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store,
+          items: [{ name: newName, qty: items[idx].qty }],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? "failed");
+      const updated = [...items];
+      updated[idx] = data.items[0];
+      setItems(updated);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingIdx(null);
+      cancelEdit();
+    }
+  };
+
+  const upload = async (file: File) => {
+    setPhase("scanning");
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      const res = await fetch("/api/receipt", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error ?? "failed");
+      if (data.unreadable) {
+        setError(data.notes ?? "Couldn't read that. Try again?");
+        setPhase("error");
+        return;
+      }
+      setStore(data.store);
+      setItems(data.items);
+      setPhase("parsed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "upload failed");
+      setPhase("error");
+    }
+  };
+
+  return (
+    <div className="p-5 flex-1 overflow-y-auto">
+      <Bubble>Show me what you bought.</Bubble>
+
+      {(phase === "upload" || phase === "error") && (
+        <>
+          <div
+            onClick={() => fileRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f && f.type.startsWith("image/")) upload(f);
+              else setError("Drop an image file (jpg or png).");
+            }}
+            className={`border-2 border-dashed rounded-xl p-9 text-center cursor-pointer transition ${
+              dragOver ? "border-accent bg-accentSoft" : "border-border hover:border-accent"
+            }`}
+          >
+            <div className="text-3xl mb-2">📷</div>
+            <p className="text-sm font-medium">Take photo, upload, or drop here</p>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) upload(f);
+            }}
+          />
+          {phase === "error" && (
+            <p className="mt-4 text-sm text-bad text-center">{error}</p>
+          )}
+        </>
+      )}
+
+      {phase === "scanning" && <Spinner label="Reading receipt…" />}
+
+      {phase === "parsed" && (
+        <>
+          <Bubble>
+            {items.length} items from <strong>{store}</strong>.
+            {items.filter((i) => i.confidence !== "high").length > 0 && (
+              <>
+                {" "}
+                {items.filter((i) => i.confidence !== "high").length}{" "}
+                I&apos;m less sure about (⚠).
+              </>
+            )}
+          </Bubble>
+
+          <div className="bg-card border border-border rounded-xl overflow-hidden mb-5 max-h-64 overflow-y-auto">
+            <div className="px-4 py-2 border-b border-border flex items-center gap-2">
+              <span className="text-[10px] font-bold text-accent bg-accentSoft px-2 py-0.5 rounded-full uppercase tracking-wider">
+                {store}
+              </span>
+              <span className="text-[11px] text-muted">{items.length} items</span>
+            </div>
+            {items.map((it, i) => {
+              const isEditing = editingIdx === i;
+              const isSaving = savingIdx === i;
+              if (isEditing) {
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 px-4 py-2 border-t border-border first:border-t-0 bg-accentSoft"
+                  >
+                    <input
+                      autoFocus
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEdit(i);
+                        if (e.key === "Escape") cancelEdit();
+                      }}
+                      className="flex-1 text-sm bg-card border border-border rounded px-2 py-1"
+                    />
+                    <button
+                      onClick={() => saveEdit(i)}
+                      disabled={isSaving}
+                      className="text-xs text-accent font-semibold disabled:opacity-50"
+                    >
+                      {isSaving ? "…" : "save"}
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="text-xs text-muted"
+                    >
+                      cancel
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <button
+                  key={i}
+                  onClick={() => startEdit(i)}
+                  className="w-full flex items-center justify-between px-4 py-2 border-t border-border first:border-t-0 text-left hover:bg-chatBg"
+                >
+                  <span className="text-sm flex-1 truncate flex items-center gap-1">
+                    {it.name}
+                    {it.confidence !== "high" && (
+                      <span className="text-warn text-xs">⚠</span>
+                    )}
+                  </span>
+                  <span className="text-xs text-muted ml-2">×{it.qty}</span>
+                </button>
+              );
+            })}
+            <div className="px-4 py-2 text-[11px] text-muted italic border-t border-border">
+              Tap any item to correct its name.
+            </div>
+          </div>
+
+          <Bubble>How many days should this cover?</Bubble>
+          <div className="flex items-center justify-center gap-5 my-6">
+            <button
+              onClick={() => setDays(Math.max(1, days - 1))}
+              className="w-10 h-10 rounded-full border border-border bg-card text-lg"
+            >
+              −
+            </button>
+            <span className="font-display text-5xl min-w-[60px] text-center">
+              {days}
+            </span>
+            <button
+              onClick={() => setDays(Math.min(14, days + 1))}
+              className="w-10 h-10 rounded-full border border-border bg-card text-lg"
+            >
+              +
+            </button>
+          </div>
+
+          <div className="text-center">
+            <button
+              className="btn-primary"
+              onClick={() => onComplete({ store, items, days })}
+            >
+              Next →
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

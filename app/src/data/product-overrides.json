@@ -1,0 +1,4 @@
+{
+  "_comment": "Handpicked store+item → verified nutrition, used as a pre-LLM lookup by the nutrition estimator. Empty for v0 — fill in after demo reveals which items the estimator gets wrong. Shape: { 'Store Name': { 'Item Name (normalized lowercase)': { protein_g, cal, added_sugar_g, per: 'package' | 'unit' } } }",
+  "overrides": {}
+}

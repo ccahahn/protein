@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    @apply bg-bg text-ink font-body;
+  }
+  h1, h2, h3 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .bubble {
+    @apply bg-card border border-border rounded-[4px_16px_16px_16px] px-4 py-3 max-w-[88%] text-sm text-ink leading-relaxed;
+  }
+  .btn-primary {
+    @apply bg-accent text-white font-semibold rounded-xl px-9 py-3 shadow-[0_4px_16px_rgba(212,100,42,0.3)] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply border border-border text-muted font-semibold rounded-xl px-5 py-2;
+  }
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196, 69, 54, 0.5); }
+  50% { box-shadow: 0 0 0 16px rgba(196, 69, 54, 0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.8s linear infinite; }
+.mic-pulse { animation: mic-pulse 1.4s ease-out infinite; }
