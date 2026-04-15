@@ -71,6 +71,26 @@ export function ReceiptStep({ onComplete }: Props) {
   const [savingIdx, setSavingIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const rejectIfVideo = (file: File): string | null => {
+    // `accept="image/*"` is a hint, not a guarantee — Android pickers can
+    // still hand us a video file. Same for drag-and-drop. Reject anything
+    // whose mime type starts with 'video/' or is a known video extension.
+    const type = (file.type || "").toLowerCase();
+    const name = file.name.toLowerCase();
+    const looksLikeVideo =
+      type.startsWith("video/") ||
+      /\.(mp4|mov|avi|mkv|webm|m4v|3gp)$/i.test(name);
+    if (looksLikeVideo) {
+      return "That looks like a video. Please upload a photo of the receipt.";
+    }
+    // Empty mime is common on some Android pickers — allow it; if the
+    // decode fails downstream we'll surface a clear message then.
+    if (type && !type.startsWith("image/")) {
+      return "That doesn't look like an image. Please upload a photo of the receipt.";
+    }
+    return null;
+  };
+
   const startEdit = (idx: number) => {
     setEditingIdx(idx);
     setEditDraft(items[idx].name);
@@ -109,13 +129,28 @@ export function ReceiptStep({ onComplete }: Props) {
   };
 
   const upload = async (file: File) => {
+    const videoError = rejectIfVideo(file);
+    if (videoError) {
+      setError(videoError);
+      setPhase("error");
+      return;
+    }
     setPhase("scanning");
     setError(null);
     try {
       // Compress client-side first. Samsung Motion Photos and raw camera
       // shots can be 20MB+, and Vercel caps the serverless request body at
       // ~4.5MB. Compressing to max 2000px JPEG at 85% keeps us well under.
-      const blob = await compressImage(file);
+      let blob: Blob;
+      try {
+        blob = await compressImage(file);
+      } catch {
+        setError(
+          "Couldn't read that file as an image. Please upload a photo of the receipt."
+        );
+        setPhase("error");
+        return;
+      }
       const compressed =
         blob instanceof File
           ? blob
@@ -180,8 +215,7 @@ export function ReceiptStep({ onComplete }: Props) {
               e.preventDefault();
               setDragOver(false);
               const f = e.dataTransfer.files?.[0];
-              if (f && f.type.startsWith("image/")) upload(f);
-              else setError("Drop an image file (jpg or png).");
+              if (f) upload(f);
             }}
             className={`border-2 border-dashed rounded-xl py-10 px-6 text-center cursor-pointer transition ${
               dragOver ? "border-accent bg-accentSoft" : "border-border hover:border-accent"
