@@ -76,4 +76,8 @@ export async function getPrompt(slug: string): Promise<string> {
   return system;
 }
 
-export const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5";
+// Latest Sonnet (4.6). Bump this when a newer model ships. Not env-driven
+// because an overridable model makes the readout non-reproducible across
+// environments — and the whole point of pinning prompts in Braintrust is
+// making behavior reproducible.
+export const MODEL = "claude-sonnet-4-6";
