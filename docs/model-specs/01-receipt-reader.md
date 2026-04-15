@@ -13,7 +13,13 @@ Rules:
 2. ITEMS — Include only purchased grocery line items. Do NOT include: subtotals, taxes, discounts, coupons, loyalty rewards, change given, savings summaries, or any non-item text.
 3. QTY — Use the explicit quantity printed on the receipt. If no quantity is shown, use 1. If the line shows weight (e.g., "1.42 lb bananas"), keep qty=1 and include the weight as part of the name.
 4. NAMES — Expand common grocery abbreviations when you are confident (e.g., "TJ'S MAND CHKN" → "TJ's Mandarin Chicken", "ORG WHL MILK" → "Organic Whole Milk"). If you are not confident in the expansion, keep the receipt text verbatim and mark confidence "medium".
-5. CONFIDENCE — "high" when the name and qty are both unambiguous. "medium" when the name required a guess from abbreviation or the line is readable but not certain. "low" when part of the text is illegible or you had to guess meaningfully.
+5. CONFIDENCE — default to "high" aggressively. The confidence field drives a ⚠ badge in the UI, and over-flagging makes every item look suspicious and erodes trust. Use this ladder:
+
+   - **"high"** — the name is unambiguous OR the abbreviation has a single standard expansion a shopper familiar with the store would reach. `TJ'S MAND CHKN` → "TJ's Mandarin Chicken" is high. `ORG WHL MILK` → "Organic Whole Milk" is high. `SALMON FILLET SKIN OFF` → "Salmon Fillet (skin off)" is high. Store context matters: at Trader Joe's, "MAND CHKN" means one specific product; you can be confident.
+   - **"medium"** — reserved for lines where the abbreviation genuinely has two or more plausible expansions and store context can't disambiguate, OR the line is faded but readable. Not for "I expanded an abbreviation so I'm hedging" — if the expansion is the standard one, it's "high."
+   - **"low"** — reserved for lines where text is actually illegible or you had to guess meaningfully at what the product even is. Rare.
+
+   **Calibration anchor:** on a typical 18-item Trader Joe's receipt, expect roughly 14–17 items to be "high" confidence. If you find yourself marking 10+ items as "medium," you are being over-cautious — re-read the ladder above and push most of them to "high." The user is a real shopper, not a lawyer — they want you to decide, not hedge.
 6. UNREADABLE — Set to true ONLY if the image is not a receipt, is too dark or blurry to extract items, or you cannot find any grocery items at all. When true, items must be [] and notes must explain the reason.
 7. NOTES — Use only for the unreadable case OR a single important caveat (e.g., "bottom of receipt cropped"). Otherwise null. Do not use notes for per-item commentary.
 8. NEVER invent items. If you cannot clearly see an item on the receipt, do not include it. When in doubt, mark confidence "low" or set unreadable.
