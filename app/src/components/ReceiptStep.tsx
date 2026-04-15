@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { Bubble } from "./Bubble";
 import { Spinner } from "./Spinner";
+import { compressImage } from "@/lib/compress-image";
 import type { NutritionItem } from "@/lib/types";
 
 function CameraIcon() {
@@ -111,18 +112,44 @@ export function ReceiptStep({ onComplete }: Props) {
     setPhase("scanning");
     setError(null);
     try {
+      // Compress client-side first. Samsung Motion Photos and raw camera
+      // shots can be 20MB+, and Vercel caps the serverless request body at
+      // ~4.5MB. Compressing to max 2000px JPEG at 85% keeps us well under.
+      const blob = await compressImage(file);
+      const compressed =
+        blob instanceof File
+          ? blob
+          : new File([blob], "receipt.jpg", { type: "image/jpeg" });
+
       const fd = new FormData();
-      fd.append("image", file);
+      fd.append("image", compressed);
       const res = await fetch("/api/receipt", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error ?? "failed");
-      if (data.unreadable) {
+
+      // Read body as text first so a non-JSON error (like Vercel's "Request
+      // Entity Too Large" plaintext) doesn't blow up JSON.parse.
+      const rawText = await res.text();
+      let data: {
+        error?: string;
+        unreadable?: boolean;
+        notes?: string | null;
+        store?: string;
+        items?: NutritionItem[];
+      } | null = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        throw new Error(
+          `Server returned ${res.status}: ${rawText.slice(0, 120)}`
+        );
+      }
+      if (!res.ok || data?.error) throw new Error(data?.error ?? "failed");
+      if (data?.unreadable) {
         setError(data.notes ?? "Couldn't read that. Try again?");
         setPhase("error");
         return;
       }
-      setStore(data.store);
-      setItems(data.items);
+      setStore(data?.store ?? "");
+      setItems(data?.items ?? []);
       setPhase("parsed");
     } catch (e) {
       setError(e instanceof Error ? e.message : "upload failed");
