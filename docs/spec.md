@@ -35,7 +35,7 @@ It is good when the readout feels like that friend pointing at the receipt and s
 
 ## Core flow
 
-1. **Scan a receipt.** Photo of a receipt. LLM vision extracts store name, line items + quantities. User confirms and specifies how many days the groceries should cover.
+1. **Scan a receipt.** Quiet entry point — no onboarding, no agent greeting, no app name. One heading ("Snap your receipt."), one subtitle explaining what comes back and how fast, one upload zone, and three tiny step dots showing where the user is in the flow. A first-time user should know what to do and what they'll get in under three seconds. The conversational / agent voice starts *after* the upload, not before. Photo of the receipt then goes to LLM vision, which extracts store name, line items + quantities. User confirms and specifies how many days the groceries should cover.
 2. **What's at home?** Optional voice-dictated pantry inventory. User describes what they already have ("pound of ground turkey, big bag of rice, some pasta"). Agent parses into items and folds into totals. Skippable.
 3. **Dictate your household.** User taps record and describes their family in natural language. Agent parses into structured profiles with editable cards.
 4. **The readout.** Map items to nutrition, compare against family targets, deliver plain-language verdict with per-nutrient day runway, actionable suggestions, and after-state.

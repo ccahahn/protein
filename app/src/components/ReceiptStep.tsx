@@ -4,6 +4,56 @@ import { Bubble } from "./Bubble";
 import { Spinner } from "./Spinner";
 import type { NutritionItem } from "@/lib/types";
 
+function CameraIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+
+function StepDot({
+  n,
+  label,
+  active = false,
+}: {
+  n: number;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <div
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+          active
+            ? "bg-accent text-white"
+            : "bg-card border border-border text-muted"
+        }`}
+      >
+        {n}
+      </div>
+      <div
+        className={`text-[10px] leading-none ${
+          active ? "text-ink font-semibold" : "text-muted"
+        }`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   onComplete: (data: { store: string; items: NutritionItem[]; days: number }) => void;
 };
@@ -82,10 +132,16 @@ export function ReceiptStep({ onComplete }: Props) {
 
   return (
     <div className="p-5 flex-1 overflow-y-auto">
-      <Bubble>Show me what you bought.</Bubble>
-
       {(phase === "upload" || phase === "error") && (
         <>
+          <h1 className="font-display italic text-3xl text-center mt-4 mb-3">
+            Snap your receipt.
+          </h1>
+          <p className="text-sm text-muted text-center mb-8 px-2 leading-relaxed">
+            I&apos;ll tell you if you bought enough protein, too much sugar, and
+            what to swap in about 30 seconds.
+          </p>
+
           <div
             onClick={() => fileRef.current?.click()}
             onDragOver={(e) => {
@@ -100,12 +156,17 @@ export function ReceiptStep({ onComplete }: Props) {
               if (f && f.type.startsWith("image/")) upload(f);
               else setError("Drop an image file (jpg or png).");
             }}
-            className={`border-2 border-dashed rounded-xl p-9 text-center cursor-pointer transition ${
+            className={`border-2 border-dashed rounded-xl py-10 px-6 text-center cursor-pointer transition ${
               dragOver ? "border-accent bg-accentSoft" : "border-border hover:border-accent"
             }`}
           >
-            <div className="text-3xl mb-2">📷</div>
-            <p className="text-sm font-medium">Take photo, upload, or drop here</p>
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-accentSoft text-accent mb-3">
+              <CameraIcon />
+            </div>
+            <p className="text-base font-semibold">Take a photo or upload</p>
+            <p className="text-xs text-muted mt-1">
+              Trader Joe&apos;s, Costco, Whole Foods, any store
+            </p>
           </div>
           <input
             ref={fileRef}
@@ -121,6 +182,12 @@ export function ReceiptStep({ onComplete }: Props) {
           {phase === "error" && (
             <p className="mt-4 text-sm text-bad text-center">{error}</p>
           )}
+
+          <div className="flex items-center justify-center gap-6 mt-10 mb-2">
+            <StepDot n={1} label="Scan receipt" active />
+            <StepDot n={2} label="Say who's eating" />
+            <StepDot n={3} label="Get the verdict" />
+          </div>
         </>
       )}
 
