@@ -26,25 +26,6 @@ function CameraIcon() {
   );
 }
 
-function LinkIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  );
-}
-
 type Props = {
   onComplete: (data: {
     store: string;
@@ -226,7 +207,7 @@ export function EntryStep({ onComplete }: Props) {
       {(phase === "upload" || phase === "error") && (
         <>
           <h1 className="font-display italic text-3xl text-center mt-4 mb-3">
-            Snap a receipt. Or paste a recipe.
+            Snap your receipt.
           </h1>
           <p className="text-sm text-muted text-center mb-8 px-2 leading-relaxed">
             I&apos;ll point out your best protein picks and where the added
@@ -269,47 +250,33 @@ export function EntryStep({ onComplete }: Props) {
             }}
           />
 
-          <div className="flex items-center gap-3 my-6">
+          <div className="flex items-center gap-3 mt-6 mb-4">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted uppercase tracking-widest">
-              or
-            </span>
+            <span className="font-display italic text-sm text-muted">or</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          <div className="border-2 border-dashed border-border rounded-xl py-6 px-5">
-            <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-accentSoft text-accent mb-3">
-              <LinkIcon />
-            </div>
-            <p className="text-base font-semibold mb-1">
-              Paste a recipe URL
-            </p>
-            <p className="text-xs text-muted mb-4">
-              Any recipe site. I&apos;ll pull the ingredients and show the
-              same breakdown.
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                inputMode="url"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="https://…"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submitUrl();
-                }}
-                className="flex-1 text-sm bg-card border border-border rounded-lg px-3 py-2 focus:outline-none focus:border-accent"
-              />
-              <button
-                onClick={submitUrl}
-                disabled={!url.trim()}
-                className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Go
-              </button>
-            </div>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Paste a recipe URL"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitUrl();
+              }}
+              className="flex-1 text-sm bg-card border border-border rounded-full px-4 py-2.5 focus:outline-none focus:border-accent"
+            />
+            <button
+              onClick={submitUrl}
+              disabled={!url.trim()}
+              className="btn-primary rounded-full disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Go
+            </button>
           </div>
 
           {phase === "error" && (
