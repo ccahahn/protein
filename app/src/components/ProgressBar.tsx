@@ -3,7 +3,7 @@ type Props = {
   total?: number;
 };
 
-export function ProgressBar({ current, total = 4 }: Props) {
+export function ProgressBar({ current, total = 2 }: Props) {
   return (
     <div className="flex gap-1.5 px-5 pt-6 pb-3">
       {Array.from({ length: total }, (_, i) => {

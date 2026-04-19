@@ -1,19 +1,10 @@
 "use client";
 import { useState } from "react";
-import type {
-  NutritionItem,
-  PantryItem,
-  Profile,
-  ReadoutOutput,
-} from "@/lib/types";
-import { effectiveTargets, explainTargets } from "@/lib/client-dri";
+import type { NutritionItem, ReadoutOutput } from "@/lib/types";
 
 type Props = {
   readout: ReadoutOutput;
   receiptItems: NutritionItem[];
-  pantryItems: PantryItem[];
-  profiles: Profile[];
-  days: number;
   store: string;
   onRestart: () => void;
 };
@@ -28,53 +19,15 @@ function sumField<T extends { protein_g: number; cal: number; added_sugar_g: num
 export function ReadoutScreen({
   readout,
   receiptItems,
-  pantryItems,
-  profiles,
-  days,
   store,
   onRestart,
 }: Props) {
   const [showItems, setShowItems] = useState(false);
-  const [showTargets, setShowTargets] = useState(false);
-
-  const runway = readout.runway;
-  const proteinOk = runway.protein.status === "ok";
-  const sugarOver = runway.sugar.status === "over";
-
-  const pctSugar = Math.round((runway.sugar.days_covered / days) * 100);
-  const proteinDays = runway.protein.days_covered;
 
   const receiptTotals = {
     protein_g: sumField(receiptItems, "protein_g"),
     cal: sumField(receiptItems, "cal"),
     added_sugar_g: sumField(receiptItems, "added_sugar_g"),
-  };
-  const pantryTotals = {
-    protein_g: sumField(pantryItems, "protein_g"),
-    cal: sumField(pantryItems, "cal"),
-    added_sugar_g: sumField(pantryItems, "added_sugar_g"),
-  };
-  const combined = {
-    protein_g: receiptTotals.protein_g + pantryTotals.protein_g,
-    cal: receiptTotals.cal + pantryTotals.cal,
-    added_sugar_g: receiptTotals.added_sugar_g + pantryTotals.added_sugar_g,
-  };
-
-  const familyDaily = profiles.reduce(
-    (a, p) => {
-      const t = effectiveTargets(p);
-      return {
-        protein_g: a.protein_g + t.protein_g,
-        cal: a.cal + t.cal,
-        added_sugar_g: a.added_sugar_g + t.added_sugar_g,
-      };
-    },
-    { protein_g: 0, cal: 0, added_sugar_g: 0 }
-  );
-  const familyForDays = {
-    protein_g: familyDaily.protein_g * days,
-    cal: familyDaily.cal * days,
-    added_sugar_g: familyDaily.added_sugar_g * days,
   };
 
   return (
@@ -85,18 +38,11 @@ export function ReadoutScreen({
       <p className="text-xs text-muted mb-5">{readout.subtitle}</p>
 
       <div className="grid grid-cols-2 gap-2 mb-7">
-        <FractionTile
-          label="Protein"
-          ok={proteinOk}
-          covered={proteinDays}
-          target={days}
-          sub="days covered"
-        />
-        <Tile
+        <TotalTile label="Protein" value={readout.totals.protein_g} tone="good" />
+        <TotalTile
           label="Added sugar"
-          ok={!sugarOver}
-          primary={`${pctSugar}%`}
-          sub="of your limit"
+          value={readout.totals.added_sugar_g}
+          tone={readout.sugar_hiding.length > 0 ? "bad" : "neutral"}
         />
       </div>
 
@@ -110,9 +56,7 @@ export function ReadoutScreen({
               <div
                 key={i}
                 className={`rounded-xl p-4 flex items-start justify-between gap-3 ${
-                  p.gap_closer
-                    ? "bg-goodSoft border-2 border-good/60"
-                    : i === 0
+                  i === 0
                     ? "bg-goodSoft border border-good/40"
                     : "bg-card border border-border"
                 }`}
@@ -122,16 +66,6 @@ export function ReadoutScreen({
                   <div className="text-xs text-muted mt-1 leading-snug">
                     {p.note}
                   </div>
-                  {p.gap_closer && (
-                    <div className="mt-2 leading-snug">
-                      <div className="text-xs text-muted">
-                        Short {p.gap_closer.short_by_g}g of protein.
-                      </div>
-                      <div className="text-xs font-semibold text-accent mt-0.5">
-                        → {p.gap_closer.action_text}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-display text-2xl text-good leading-none">
@@ -211,79 +145,6 @@ export function ReadoutScreen({
               items={receiptItems}
               totals={receiptTotals}
             />
-            {pantryItems.length > 0 && (
-              <ItemGroup
-                title="From pantry"
-                items={pantryItems}
-                totals={pantryTotals}
-              />
-            )}
-            <div className="bg-card border border-border rounded-xl p-3 text-xs">
-              <div className="font-semibold mb-1">Combined totals</div>
-              <Row label="Protein" value={`${combined.protein_g} g`} />
-              <Row label="Calories" value={`${combined.cal}`} />
-              <Row label="Added sugar" value={`${combined.added_sugar_g} g`} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-border pt-4 mb-3">
-        <button
-          onClick={() => setShowTargets((v) => !v)}
-          className="w-full text-left text-xs font-semibold uppercase tracking-wider text-muted flex justify-between"
-        >
-          <span>Per-person targets</span>
-          <span>{showTargets ? "–" : "+"}</span>
-        </button>
-        {showTargets && (
-          <div className="mt-3 space-y-3">
-            {profiles.map((p, i) => {
-              const eff = effectiveTargets(p);
-              const exp = explainTargets(p);
-              return (
-                <div key={i} className="bg-card border border-border rounded-xl p-3 text-xs">
-                  <div className="font-semibold mb-1">
-                    {p.name ?? `Person ${i + 1}`}{" "}
-                    <span className="text-muted font-normal">· age {p.age}</span>
-                  </div>
-                  <Row
-                    label="Protein"
-                    value={`${eff.protein_g} g/day`}
-                    sub={exp.protein_why}
-                  />
-                  <Row label="Calories" value={`${eff.cal}/day`} sub={exp.cal_why} />
-                  <Row
-                    label="Added sugar ceiling"
-                    value={`${eff.added_sugar_g} g/day`}
-                    sub={exp.added_sugar_why}
-                  />
-                </div>
-              );
-            })}
-            <div className="bg-accentSoft border border-accent/20 rounded-xl p-3 text-xs">
-              <div className="font-semibold mb-1">
-                Family total for {days} day{days === 1 ? "" : "s"}
-              </div>
-              <Row
-                label="Protein"
-                value={`${familyForDays.protein_g} g`}
-                sub={`${familyDaily.protein_g} g/day × ${days}`}
-              />
-              <Row
-                label="Calories"
-                value={`${familyForDays.cal}`}
-                sub={`${familyDaily.cal}/day × ${days}`}
-              />
-              <Row
-                label="Added sugar ceiling"
-                value={`${familyForDays.added_sugar_g} g`}
-                sub={`${familyDaily.added_sugar_g} g/day × ${days}`}
-              />
-            </div>
-            <p className="text-[10px] text-muted italic">
-              Sources: USDA DRI (protein, calories). AHA / USDA (added sugar).
-            </p>
           </div>
         )}
       </div>
@@ -297,89 +158,31 @@ export function ReadoutScreen({
   );
 }
 
-function Tile({
-  label,
-  ok,
-  primary,
-  sub,
-}: {
-  label: string;
-  ok: boolean;
-  primary: string;
-  sub: string;
-}) {
-  return (
-    <div
-      className={`rounded-xl p-3 border text-center ${
-        ok ? "bg-card border-border" : "bg-badSoft border-bad/40"
-      }`}
-    >
-      <div className="text-[9px] uppercase tracking-wider text-muted mb-1">
-        {label}
-      </div>
-      <div
-        className={`font-display leading-none h-10 flex items-center justify-center ${
-          ok ? "text-good" : "text-bad"
-        }`}
-      >
-        <span className="text-2xl">{primary}</span>
-      </div>
-      <div className="text-[10px] text-muted mt-1">{sub}</div>
-    </div>
-  );
-}
-
-function FractionTile({
-  label,
-  ok,
-  covered,
-  target,
-  sub,
-}: {
-  label: string;
-  ok: boolean;
-  covered: number;
-  target: number;
-  sub: string;
-}) {
-  return (
-    <div
-      className={`rounded-xl p-3 border text-center ${
-        ok ? "bg-card border-border" : "bg-badSoft border-bad/40"
-      }`}
-    >
-      <div className="text-[9px] uppercase tracking-wider text-muted mb-1">
-        {label}
-      </div>
-      <div
-        className={`font-display leading-none h-10 flex items-baseline justify-center ${
-          ok ? "text-good" : "text-bad"
-        }`}
-      >
-        <span className="text-4xl">{covered}</span>
-        <span className="text-base text-muted">/{target}</span>
-      </div>
-      <div className="text-[10px] text-muted mt-1">{sub}</div>
-    </div>
-  );
-}
-
-function Row({
+function TotalTile({
   label,
   value,
-  sub,
+  tone,
 }: {
   label: string;
-  value: string;
-  sub?: string;
+  value: number;
+  tone: "good" | "bad" | "neutral";
 }) {
+  const bg =
+    tone === "bad" ? "bg-badSoft border-bad/40" : "bg-card border-border";
+  const text =
+    tone === "bad" ? "text-bad" : tone === "good" ? "text-good" : "text-ink";
   return (
-    <div className="flex justify-between items-baseline py-0.5">
-      <div>
-        <div>{label}</div>
-        {sub && <div className="text-[10px] text-muted">{sub}</div>}
+    <div className={`rounded-xl p-3 border text-center ${bg}`}>
+      <div className="text-[9px] uppercase tracking-wider text-muted mb-1">
+        {label}
       </div>
-      <div className="font-semibold tabular-nums">{value}</div>
+      <div
+        className={`font-display leading-none h-10 flex items-baseline justify-center ${text}`}
+      >
+        <span className="text-4xl">{value}</span>
+        <span className="text-xl">g</span>
+      </div>
+      <div className="text-[10px] text-muted mt-1">total</div>
     </div>
   );
 }
@@ -390,7 +193,7 @@ function ItemGroup({
   totals,
 }: {
   title: string;
-  items: (NutritionItem | PantryItem)[];
+  items: NutritionItem[];
   totals: { protein_g: number; cal: number; added_sugar_g: number };
 }) {
   return (

@@ -107,20 +107,10 @@ async function seedReadoutScenarios() {
   // scorers inspect the output for rule compliance.
   const scenarios = [
     {
-      name: "protein_short_sugar_over",
+      name: "strong_picks_sugar_hiders",
       input: {
-        family: [
-          { name: "Werner", age: 43, protein_target: 65, cal_target: 2400, sugar_target: 36 },
-          { name: "Cecilia", age: 34, protein_target: 49, cal_target: 1800, sugar_target: 25 },
-        ],
-        days: 5,
         totals: { protein_g: 400, cal: 12000, added_sugar_g: 180 },
-        per_nutrient_runway: {
-          protein: { days_covered: 3, status: "short" as const },
-          calories: { days_covered: 5, status: "ok" as const },
-          sugar: { days_covered: 6, status: "over" as const },
-        },
-        subtitle: "2 people · 5 days · Trader Joe's",
+        subtitle: "13 items from Trader Joe's",
         best_pick_candidates: [
           { item: "Organic Chicken Thighs", protein_g: 109, added_sugar_g: 0, cal: 979 },
           { item: "Salmon Fillet", protein_g: 69, added_sugar_g: 0, cal: 664 },
@@ -136,17 +126,10 @@ async function seedReadoutScenarios() {
       },
     },
     {
-      name: "everything_ok",
+      name: "clean_cart_no_hiders",
       input: {
-        family: [{ name: "Cecilia", age: 34, protein_target: 49, cal_target: 1800, sugar_target: 25 }],
-        days: 3,
-        totals: { protein_g: 200, cal: 5400, added_sugar_g: 40 },
-        per_nutrient_runway: {
-          protein: { days_covered: 4, status: "ok" as const },
-          calories: { days_covered: 3, status: "ok" as const },
-          sugar: { days_covered: 2, status: "ok" as const },
-        },
-        subtitle: "1 person · 3 days · Trader Joe's",
+        totals: { protein_g: 200, cal: 5400, added_sugar_g: 12 },
+        subtitle: "9 items from Trader Joe's",
         best_pick_candidates: [
           { item: "Salmon Fillet", protein_g: 69, added_sugar_g: 0, cal: 664 },
           { item: "Greek Yogurt", protein_g: 40, added_sugar_g: 0, cal: 320 },
@@ -157,17 +140,10 @@ async function seedReadoutScenarios() {
       },
     },
     {
-      name: "only_sugar_over",
+      name: "one_big_offender",
       input: {
-        family: [{ name: "Cecilia", age: 34, protein_target: 49, cal_target: 1800, sugar_target: 25 }],
-        days: 5,
         totals: { protein_g: 300, cal: 9000, added_sugar_g: 180 },
-        per_nutrient_runway: {
-          protein: { days_covered: 6, status: "ok" as const },
-          calories: { days_covered: 5, status: "ok" as const },
-          sugar: { days_covered: 7, status: "over" as const },
-        },
-        subtitle: "1 person · 5 days · Trader Joe's",
+        subtitle: "11 items from Trader Joe's",
         best_pick_candidates: [
           { item: "Chicken Breast", protein_g: 100, added_sugar_g: 0, cal: 660 },
         ],
@@ -179,17 +155,10 @@ async function seedReadoutScenarios() {
       },
     },
     {
-      name: "only_protein_short",
+      name: "thin_cart_one_protein_item",
       input: {
-        family: [{ name: "Werner", age: 43, protein_target: 65, cal_target: 2400, sugar_target: 36 }],
-        days: 5,
-        totals: { protein_g: 150, cal: 12000, added_sugar_g: 20 },
-        per_nutrient_runway: {
-          protein: { days_covered: 2, status: "short" as const },
-          calories: { days_covered: 5, status: "ok" as const },
-          sugar: { days_covered: 1, status: "ok" as const },
-        },
-        subtitle: "1 person · 5 days · Trader Joe's",
+        totals: { protein_g: 150, cal: 12000, added_sugar_g: 8 },
+        subtitle: "6 items from Trader Joe's",
         best_pick_candidates: [
           { item: "Chicken Meatballs", protein_g: 64, added_sugar_g: 0, cal: 600 },
           { item: "Eggs (dozen)", protein_g: 72, added_sugar_g: 0, cal: 840 },
@@ -199,13 +168,25 @@ async function seedReadoutScenarios() {
         store: "Trader Joe's",
       },
     },
+    {
+      name: "no_best_picks_only_hiders",
+      input: {
+        totals: { protein_g: 40, cal: 6000, added_sugar_g: 120 },
+        subtitle: "7 items from Trader Joe's",
+        best_pick_candidates: [],
+        sugar_hiding: [
+          { item: "Cocoa Puffs", added_sugar_g: 77, protein_g: 6, cal: 1120 },
+          { item: "Flavored Yogurt (4-pack)", added_sugar_g: 40, protein_g: 16, cal: 560 },
+        ],
+        low_confidence_items: [],
+        store: "Trader Joe's",
+      },
+    },
   ];
 
   for (const s of scenarios) {
     dataset.insert({
       input: s.input,
-      // No 'expected' — the rule scorers read the agent's output directly.
-      // We still pass metadata so Braintrust UI shows the scenario name.
       metadata: { scenario: s.name },
     });
   }

@@ -24,39 +24,8 @@ function CameraIcon() {
   );
 }
 
-function StepDot({
-  n,
-  label,
-  active = false,
-}: {
-  n: number;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div
-        className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold ${
-          active
-            ? "bg-accent text-white"
-            : "bg-card border border-border text-muted"
-        }`}
-      >
-        {n}
-      </div>
-      <div
-        className={`text-[10px] leading-none ${
-          active ? "text-ink font-semibold" : "text-muted"
-        }`}
-      >
-        {label}
-      </div>
-    </div>
-  );
-}
-
 type Props = {
-  onComplete: (data: { store: string; items: NutritionItem[]; days: number }) => void;
+  onComplete: (data: { store: string; items: NutritionItem[] }) => void;
 };
 
 export function ReceiptStep({ onComplete }: Props) {
@@ -64,7 +33,6 @@ export function ReceiptStep({ onComplete }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [store, setStore] = useState<string>("");
   const [items, setItems] = useState<NutritionItem[]>([]);
-  const [days, setDays] = useState(5);
   const [dragOver, setDragOver] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -200,8 +168,8 @@ export function ReceiptStep({ onComplete }: Props) {
             Snap your receipt.
           </h1>
           <p className="text-sm text-muted text-center mb-8 px-2 leading-relaxed">
-            I&apos;ll tell you if you bought enough protein, too much sugar, and
-            what to swap in about 30 seconds.
+            I&apos;ll point out your best protein picks and where the added
+            sugar is hiding, in about 30 seconds.
           </p>
 
           <div
@@ -242,12 +210,6 @@ export function ReceiptStep({ onComplete }: Props) {
           {phase === "error" && (
             <p className="mt-4 text-sm text-bad text-center">{error}</p>
           )}
-
-          <div className="flex items-center justify-center gap-6 mt-10 mb-2">
-            <StepDot n={1} label="Scan receipt" active />
-            <StepDot n={2} label="Say who's eating" />
-            <StepDot n={3} label="Get the verdict" />
-          </div>
         </>
       )}
 
@@ -329,31 +291,12 @@ export function ReceiptStep({ onComplete }: Props) {
             </div>
           </div>
 
-          <Bubble>How many days should this cover?</Bubble>
-          <div className="flex items-center justify-center gap-5 my-6">
-            <button
-              onClick={() => setDays(Math.max(1, days - 1))}
-              className="w-10 h-10 rounded-full border border-border bg-card text-lg"
-            >
-              −
-            </button>
-            <span className="font-display text-5xl min-w-[60px] text-center">
-              {days}
-            </span>
-            <button
-              onClick={() => setDays(Math.min(14, days + 1))}
-              className="w-10 h-10 rounded-full border border-border bg-card text-lg"
-            >
-              +
-            </button>
-          </div>
-
-          <div className="text-center">
+          <div className="text-center mt-4">
             <button
               className="btn-primary"
-              onClick={() => onComplete({ store, items, days })}
+              onClick={() => onComplete({ store, items })}
             >
-              Next →
+              See the readout →
             </button>
           </div>
         </>
