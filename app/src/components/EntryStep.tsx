@@ -5,6 +5,8 @@ import { Spinner } from "./Spinner";
 import { compressImage } from "@/lib/compress-image";
 import type { NutritionItem } from "@/lib/types";
 
+type Source = "receipt" | "recipe";
+
 function CameraIcon() {
   return (
     <svg
@@ -24,25 +26,48 @@ function CameraIcon() {
   );
 }
 
+function LinkIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 type Props = {
-  onComplete: (data: { store: string; items: NutritionItem[] }) => void;
+  onComplete: (data: {
+    store: string;
+    items: NutritionItem[];
+    servings?: number;
+  }) => void;
 };
 
-export function ReceiptStep({ onComplete }: Props) {
+export function EntryStep({ onComplete }: Props) {
   const [phase, setPhase] = useState<"upload" | "scanning" | "parsed" | "error">("upload");
+  const [source, setSource] = useState<Source>("receipt");
   const [error, setError] = useState<string | null>(null);
   const [store, setStore] = useState<string>("");
+  const [servings, setServings] = useState<number | undefined>(undefined);
   const [items, setItems] = useState<NutritionItem[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [url, setUrl] = useState("");
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [savingIdx, setSavingIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const rejectIfVideo = (file: File): string | null => {
-    // `accept="image/*"` is a hint, not a guarantee — Android pickers can
-    // still hand us a video file. Same for drag-and-drop. Reject anything
-    // whose mime type starts with 'video/' or is a known video extension.
     const type = (file.type || "").toLowerCase();
     const name = file.name.toLowerCase();
     const looksLikeVideo =
@@ -51,8 +76,6 @@ export function ReceiptStep({ onComplete }: Props) {
     if (looksLikeVideo) {
       return "That looks like a video. Please upload a photo of the receipt.";
     }
-    // Empty mime is common on some Android pickers — allow it; if the
-    // decode fails downstream we'll surface a clear message then.
     if (type && !type.startsWith("image/")) {
       return "That doesn't look like an image. Please upload a photo of the receipt.";
     }
@@ -100,15 +123,14 @@ export function ReceiptStep({ onComplete }: Props) {
     const videoError = rejectIfVideo(file);
     if (videoError) {
       setError(videoError);
+      setSource("receipt");
       setPhase("error");
       return;
     }
+    setSource("receipt");
     setPhase("scanning");
     setError(null);
     try {
-      // Compress client-side first. Samsung Motion Photos and raw camera
-      // shots can be 20MB+, and Vercel caps the serverless request body at
-      // ~4.5MB. Compressing to max 2000px JPEG at 85% keeps us well under.
       let blob: Blob;
       try {
         blob = await compressImage(file);
@@ -128,8 +150,6 @@ export function ReceiptStep({ onComplete }: Props) {
       fd.append("image", compressed);
       const res = await fetch("/api/receipt", { method: "POST", body: fd });
 
-      // Read body as text first so a non-JSON error (like Vercel's "Request
-      // Entity Too Large" plaintext) doesn't blow up JSON.parse.
       const rawText = await res.text();
       let data: {
         error?: string;
@@ -153,6 +173,7 @@ export function ReceiptStep({ onComplete }: Props) {
       }
       setStore(data?.store ?? "");
       setItems(data?.items ?? []);
+      setServings(undefined);
       setPhase("parsed");
     } catch (e) {
       setError(e instanceof Error ? e.message : "upload failed");
@@ -160,12 +181,52 @@ export function ReceiptStep({ onComplete }: Props) {
     }
   };
 
+  const submitUrl = async () => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    setSource("recipe");
+    setPhase("scanning");
+    setError(null);
+    try {
+      const res = await fetch("/api/recipe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmed }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        unreadable?: boolean;
+        notes?: string | null;
+        store?: string;
+        servings?: number;
+        items?: NutritionItem[];
+      };
+      if (!res.ok || data.error) throw new Error(data.error ?? "failed");
+      if (data.unreadable) {
+        setError(data.notes ?? "Couldn't read that recipe. Try another link?");
+        setPhase("error");
+        return;
+      }
+      setStore(data.store ?? "");
+      setServings(data.servings && data.servings > 1 ? data.servings : undefined);
+      setItems(data.items ?? []);
+      setPhase("parsed");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "recipe fetch failed");
+      setPhase("error");
+    }
+  };
+
+  const scanningLabel =
+    source === "recipe" ? "Reading recipe…" : "Reading receipt…";
+  const allQtyOne = items.every((i) => i.qty === 1);
+
   return (
     <div className="p-5 flex-1 overflow-y-auto">
       {(phase === "upload" || phase === "error") && (
         <>
           <h1 className="font-display italic text-3xl text-center mt-4 mb-3">
-            Snap your receipt.
+            Snap a receipt. Or paste a recipe.
           </h1>
           <p className="text-sm text-muted text-center mb-8 px-2 leading-relaxed">
             I&apos;ll point out your best protein picks and where the added
@@ -207,18 +268,64 @@ export function ReceiptStep({ onComplete }: Props) {
               if (f) upload(f);
             }}
           />
+
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted uppercase tracking-widest">
+              or
+            </span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          <div className="border-2 border-dashed border-border rounded-xl py-6 px-5">
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-accentSoft text-accent mb-3">
+              <LinkIcon />
+            </div>
+            <p className="text-base font-semibold mb-1">
+              Paste a recipe URL
+            </p>
+            <p className="text-xs text-muted mb-4">
+              Any recipe site. I&apos;ll pull the ingredients and show the
+              same breakdown.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="https://…"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitUrl();
+                }}
+                className="flex-1 text-sm bg-card border border-border rounded-lg px-3 py-2 focus:outline-none focus:border-accent"
+              />
+              <button
+                onClick={submitUrl}
+                disabled={!url.trim()}
+                className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Go
+              </button>
+            </div>
+          </div>
+
           {phase === "error" && (
             <p className="mt-4 text-sm text-bad text-center">{error}</p>
           )}
         </>
       )}
 
-      {phase === "scanning" && <Spinner label="Reading receipt…" />}
+      {phase === "scanning" && <Spinner label={scanningLabel} />}
 
       {phase === "parsed" && (
         <>
           <Bubble>
-            {items.length} items from <strong>{store}</strong>.
+            {items.length} {source === "recipe" ? "ingredients" : "items"} from{" "}
+            <strong>{store}</strong>
+            {source === "recipe" && servings ? ` · serves ${servings}` : ""}.
             {items.filter((i) => i.confidence === "low").length > 0 && (
               <>
                 {" "}
@@ -233,7 +340,9 @@ export function ReceiptStep({ onComplete }: Props) {
               <span className="text-[10px] font-bold text-accent bg-accentSoft px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {store}
               </span>
-              <span className="text-[11px] text-muted">{items.length} items</span>
+              <span className="text-[11px] text-muted">
+                {items.length} {source === "recipe" ? "ingredients" : "items"}
+              </span>
             </div>
             {items.map((it, i) => {
               const isEditing = editingIdx === i;
@@ -261,10 +370,7 @@ export function ReceiptStep({ onComplete }: Props) {
                     >
                       {isSaving ? "…" : "save"}
                     </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="text-xs text-muted"
-                    >
+                    <button onClick={cancelEdit} className="text-xs text-muted">
                       cancel
                     </button>
                   </div>
@@ -282,19 +388,22 @@ export function ReceiptStep({ onComplete }: Props) {
                       <span className="text-warn text-xs">⚠</span>
                     )}
                   </span>
-                  <span className="text-xs text-muted ml-2">×{it.qty}</span>
+                  {!allQtyOne && (
+                    <span className="text-xs text-muted ml-2">×{it.qty}</span>
+                  )}
                 </button>
               );
             })}
             <div className="px-4 py-2 text-[11px] text-muted italic border-t border-border">
-              Tap any item to correct its name.
+              Tap any {source === "recipe" ? "ingredient" : "item"} to correct
+              its name.
             </div>
           </div>
 
           <div className="text-center mt-4">
             <button
               className="btn-primary"
-              onClick={() => onComplete({ store, items })}
+              onClick={() => onComplete({ store, items, servings })}
             >
               See the readout →
             </button>

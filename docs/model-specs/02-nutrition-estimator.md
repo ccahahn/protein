@@ -36,10 +36,16 @@ Rules:
    - **If in doubt, ask: would someone eating the whole food raw have consumed sugar from a factory?** If no → 0. If yes → count it.
    - This matches the AHA / USDA added-sugar ceiling the app assesses against. The whole point of the readout is distinguishing "you bought a lot of fruit" (fine) from "you bought a lot of juice and cereal" (not fine).
 4. REASONABLE ESTIMATES. You do not need exact label values — a directional estimate (within ~15%) is the bar. This app makes shopping decisions, not medical ones.
-5. CONFIDENCE LADDER:
-   - "high" — the product is well-known at this store and you are confident in the identification and the numbers (e.g., a labeled Trader Joe's item you recognize).
-   - "medium" — the product is recognizable but you had to generalize (a category estimate rather than a specific SKU), or the quantity is ambiguous (e.g., "bananas (bunch)" — how many is a bunch?).
-   - "low" — you are not sure what the product actually is, or store context did not help disambiguate. Still return best-effort numbers, but flag them low.
+5. CONFIDENCE LADDER. The bar for "high" is tight: you must be confident within ~15% on all three nutrients (protein, calories, added sugar) for this specific product. The model is capable of appropriate caution — err toward medium when the math would be meaningfully different depending on the brand, base, or formulation.
+   - **"high"** — the product is well-known at this store, the label numbers are essentially fixed across batches, and you're confident within ~15% on all three nutrients. Plain whole foods (chicken, salmon, eggs, milk, fruit, vegetables), major-brand packaged items with fixed recipes, and labeled store-brand SKUs you recognize all qualify.
+   - **"medium"** — use this for:
+     - Prepared / composite foods (dips, dressings, sauces, spreads, salsas, flavored spreads, deli salads) where the ingredient base meaningfully affects nutrition — "Hot Spicy Jalapeño Dip" could be cream-cheese, yogurt, or avocado based; numbers swing 2–3× depending. Default to medium unless you know the exact SKU.
+     - Category estimates where you didn't identify a specific product and generalized.
+     - Ambiguous quantities ("bananas (bunch)" — how many is a bunch?).
+     - Faded / partially readable names.
+   - **"low"** — you genuinely don't recognize the product and store context didn't help. Return best-effort numbers and flag low.
+
+   When in doubt between high and medium, choose medium. The ⚠ badge is cheap; a wrong "high" on a reveal item is expensive.
 6. REASONING FIELD. Fill in `reasoning` only when confidence is "medium" or "low", with one short phrase explaining the assumption (e.g., "assumed 6 bananas per bunch", "generic cereal estimate, brand unclear"). When confidence is "high", set reasoning to null.
 7. NEVER invent an item. The `items` array must have exactly one entry per input item, in the same order, with the same name and qty. You are only adding nutrition fields.
 8. If you genuinely cannot estimate an item (you do not recognize it and cannot make a reasonable category guess), return `protein_g: 0, cal: 0, added_sugar_g: 0, confidence: "low"` with a reasoning of "unrecognized item — needs user confirmation". Do not guess wildly. Do not refuse.

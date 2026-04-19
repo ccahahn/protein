@@ -38,10 +38,16 @@ export function ReadoutScreen({
       <p className="text-xs text-muted mb-5">{readout.subtitle}</p>
 
       <div className="grid grid-cols-2 gap-2 mb-7">
-        <TotalTile label="Protein" value={readout.totals.protein_g} tone="good" />
+        <TotalTile
+          label="Protein"
+          value={readout.totals.protein_g}
+          perServing={readout.per_serving?.protein_g}
+          tone="good"
+        />
         <TotalTile
           label="Added sugar"
           value={readout.totals.added_sugar_g}
+          perServing={readout.per_serving?.added_sugar_g}
           tone={readout.sugar_hiding.length > 0 ? "bad" : "neutral"}
         />
       </div>
@@ -161,10 +167,12 @@ export function ReadoutScreen({
 function TotalTile({
   label,
   value,
+  perServing,
   tone,
 }: {
   label: string;
   value: number;
+  perServing?: number;
   tone: "good" | "bad" | "neutral";
 }) {
   const bg =
@@ -182,7 +190,11 @@ function TotalTile({
         <span className="text-4xl">{value}</span>
         <span className="text-xl">g</span>
       </div>
-      <div className="text-[10px] text-muted mt-1">total</div>
+      <div className="text-[10px] text-muted mt-1">
+        {typeof perServing === "number"
+          ? `${perServing}g per serving`
+          : "total"}
+      </div>
     </div>
   );
 }

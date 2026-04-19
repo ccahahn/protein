@@ -11,10 +11,18 @@ export function sumTotals(items: NutritionItem[]): Totals {
   );
 }
 
-export function subtitleFor(opts: { itemCount: number; store: string }): string {
-  const { itemCount, store } = opts;
+export function subtitleFor(opts: {
+  itemCount: number;
+  store: string;
+  servings?: number;
+}): string {
+  const { itemCount, store, servings } = opts;
   const itemLabel = itemCount === 1 ? "1 item" : `${itemCount} items`;
-  return `${itemLabel} from ${store}`;
+  const base = `${itemLabel} from ${store}`;
+  if (typeof servings === "number" && servings > 1) {
+    return `${base} · serves ${servings}`;
+  }
+  return base;
 }
 
 // Best pick CANDIDATES — server filters and ranks, but doesn't pick the

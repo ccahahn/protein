@@ -29,22 +29,25 @@ The agent work is where Braintrust comes in. Every agent in this app gets its ow
 
 ---
 
-## The three agents
+## The four agents
 
-Three model-specs, one per agent, in pipeline order. Each one is a standalone file in `/docs/model-specs/` containing only the system prompt — nothing else.
+Four model-specs, one per agent. Two of them are parallel entry readers (receipt vs recipe); the other two are shared by both paths.
 
 | # | Agent | Job | Input | Output | File |
 |---|---|---|---|---|---|
 | 1 | Receipt reader | Read a grocery receipt photo → store + items + qty | Receipt image | `{store, items[], unreadable, notes}` | `01-receipt-reader.md` |
-| 2 | Nutrition estimator | Map items (with store context) → P / cal / added sugar per item | `{store, items[]}` from agent 1 | `[{name, qty, protein_g, cal, added_sugar_g, confidence}]` | `02-nutrition-estimator.md` |
-| 3 | Readout writer | Turn pre-computed totals + best-pick candidates + sugar-hiding items into the friend's one-minute answer | Deterministic math blob (see below) | `{verdict_headline, best_pick_notes[], sugar_hiding_notes[], confidence_footnote}` | `05-readout-writer.md` |
+| 2 | Nutrition estimator | Map items (with store or recipe context) → P / cal / added sugar per item | `{store, items[]}` | `[{name, qty, protein_g, cal, added_sugar_g, confidence}]` | `02-nutrition-estimator.md` |
+| 5 | Readout writer | Turn pre-computed totals + best-pick candidates + sugar-hiding items into the friend's one-minute answer | Deterministic math blob | `{verdict_headline, best_pick_notes[], sugar_hiding_notes[], confidence_footnote}` | `05-readout-writer.md` |
+| 6 | Recipe reader | Read a recipe webpage's HTML → recipe title + servings + ingredient list | Sanitized HTML string | `{source, servings, items[], unreadable, notes}` | `06-recipe-reader.md` |
 
-(The file numbering keeps the original ordinal so Braintrust project IDs don't churn. Agents 03 and 04 — the pantry parser and household parser — were removed in the reveal-only rewrite.)
+(The file numbering keeps the original ordinal so Braintrust project IDs don't churn. Agents 03 and 04 — the pantry parser and household parser — were removed in the reveal-only rewrite. Agent 06 is new for the recipe URL feature.)
 
 **Design decisions worth keeping visible here:**
 
+- **Two entry readers, one estimator, one writer.** Receipt-reader and recipe-reader produce the same downstream shape (a list of items with names, so the nutrition estimator doesn't have to branch). The estimator is reused unchanged — it already handles ingredient-style names like "2 cups cooked chickpeas" because that's also how receipts sometimes print weighted items.
 - **Receipt reader and nutrition estimator are two agents, not one.** Different failure modes, different evals. "What did you buy" and "how much protein is in that product" are separable skills and should be tuned separately.
 - **Readout writer receives pre-computed math, not raw data.** Totals, best-pick filtering, and sugar-hiding selection all happen in `/app` before the agent runs. The agent only writes sentences about numbers it was handed. It can't invent a number.
+- **Per-serving is a render-time concern, not a math-time one.** Best picks and sugar hiding operate on whole-recipe totals because the ingredient-level facts (47g protein from the chickpeas) are what the reveal is about. Per-serving numbers only appear in the tiles.
 - **The app does not know who is eating the food.** No household intake, no per-person targets, no "how many days" question. Totals are raw totals; the agent interprets them in plain language.
 
 ---
@@ -99,12 +102,12 @@ Per our standing practice: prompts never live hardcoded in `/app`. The app code 
 
 One user session, top to bottom:
 
-1. User opens the app. Static Next.js page loads.
-2. User taps "scan receipt" → photo uploads → `POST /api/receipt` → **agent 1 (receipt reader)** → **agent 2 (nutrition estimator)** → structured item list returned.
-3. User confirms items.
-4. Client-side math: sum totals, filter best-pick candidates, filter sugar-hiding items.
-5. `POST /api/readout` with all of the above → **agent 3 (readout writer)** → headline + best-pick notes + sugar-hiding notes + optional confidence footnote.
-6. Render the readout screen.
+1. User opens the app. Static Next.js page loads. The entry screen shows two sections: receipt upload on top, recipe URL input below.
+2. **Receipt path:** user taps upload → photo posts to `POST /api/receipt` → **agent 1 (receipt reader)** → **agent 2 (nutrition estimator)** → structured item list returned with `store`.
+   **Recipe path:** user pastes a URL → `POST /api/recipe` → server fetches the URL, strips scripts/styles → **agent 6 (recipe reader)** → **agent 2 (nutrition estimator)** → structured item list returned with the recipe title as `store` and a `servings` count.
+3. User confirms the item list (same UI for both paths).
+4. `POST /api/readout` with `{store, receiptItems, servings?}` → server-side math (sum totals, filter best-pick candidates, filter sugar-hiding items, compute per-serving if servings > 1) → **agent 5 (readout writer)** → headline + best-pick notes + sugar-hiding notes + optional confidence footnote.
+5. Render the readout screen.
 
 No database writes. No persistence. Close the tab, it's gone. That's v0.
 

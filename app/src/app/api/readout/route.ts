@@ -19,12 +19,24 @@ export const maxDuration = 60;
 type RequestBody = {
   store: string;
   receiptItems: NutritionItem[];
+  // Optional — only set for the recipe entry point. When > 1, the readout
+  // tiles show per-serving alongside totals and the subtitle picks up a
+  // servings note. Receipts omit this.
+  servings?: number;
 };
+
+function perServingOf(totals: ReturnType<typeof sumTotals>, servings: number) {
+  return {
+    protein_g: Math.round(totals.protein_g / servings),
+    cal: Math.round(totals.cal / servings),
+    added_sugar_g: Math.round(totals.added_sugar_g / servings),
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as RequestBody;
-    const { store, receiptItems } = body;
+    const { store, receiptItems, servings } = body;
 
     const totals = sumTotals(receiptItems);
     const bestPickCandidates = pickBestPickCandidates(receiptItems);
@@ -34,7 +46,11 @@ export async function POST(req: NextRequest) {
     const subtitle = subtitleFor({
       itemCount: receiptItems.length,
       store,
+      servings,
     });
+
+    const hasServings = typeof servings === "number" && servings > 1;
+    const perServing = hasServings ? perServingOf(totals, servings) : undefined;
 
     const input: ReadoutInput = {
       totals: {
@@ -42,6 +58,8 @@ export async function POST(req: NextRequest) {
         cal: Math.round(totals.cal),
         added_sugar_g: Math.round(totals.added_sugar_g),
       },
+      per_serving: perServing,
+      servings: hasServings ? servings : undefined,
       subtitle,
       best_pick_candidates: bestPickCandidates.map((b) => ({
         item: b.name,
@@ -105,6 +123,8 @@ export async function POST(req: NextRequest) {
       verdict_headline: agentOut.verdict_headline,
       subtitle,
       totals: input.totals,
+      per_serving: perServing,
+      servings: hasServings ? servings : undefined,
       best_picks: bestPicksOut,
       sugar_hiding: sugarHidingOut,
       confidence_footnote: agentOut.confidence_footnote ?? null,

@@ -90,6 +90,31 @@ export function headlineNoEmDash(args: ScorerArgs) {
   return { name: "headline_no_em_dash", score: hit ? 0 : 1 };
 }
 
+// RULE: headline must not compute a multi-item sum. The agent has
+// repeatedly gotten "A + B are more added sugar than C" wrong — the
+// summed total it asserted was factually smaller than C. We ban the
+// shape outright: any headline that names two+ sugar_hiding items and
+// makes a quantitative comparison ("more", "most", "bigger", "beats")
+// against another item fails.
+export function headlineNoMultiItemSum(args: ScorerArgs) {
+  const h = args.output.verdict_headline.toLowerCase();
+  const hiderNames = args.input.sugar_hiding.map((s) => s.item.toLowerCase());
+  const mentioned = hiderNames.filter((n) =>
+    h.includes(n.slice(0, Math.min(n.length, 10)))
+  );
+  if (mentioned.length < 2) {
+    return { name: "headline_no_multi_item_sum", score: 1 };
+  }
+  const comparative =
+    /\b(more|most|bigger|beats?|together|combined|sum|added up|vs\.?|than)\b/i.test(
+      args.output.verdict_headline
+    );
+  return {
+    name: "headline_no_multi_item_sum",
+    score: comparative ? 0 : 1,
+  };
+}
+
 // RULE: headline must match the sugar-hiding data. If the input has
 // sugar-hiding items, the headline should acknowledge them (ideally by
 // naming one offender). If sugar-hiding is empty, the headline should
@@ -163,6 +188,7 @@ export const readoutAssertions = [
   noHouseholdOrDayTalk,
   headlineNoEmojiOrExcitement,
   headlineNoEmDash,
+  headlineNoMultiItemSum,
   headlineMatchesSugarHiding,
   bestPicksAreValid,
   bestPickNotesNoCalories,

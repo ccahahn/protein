@@ -33,10 +33,12 @@ It is good when the readout feels like that friend pointing at the receipt and s
 
 ## Core flow
 
-1. **Scan a receipt.** Quiet entry point — no onboarding, no agent greeting, no app name. One heading ("Snap your receipt."), one subtitle explaining what comes back and how fast, one upload zone. A first-time user should know what to do and what they'll get in under three seconds. Photo of the receipt goes to LLM vision, which extracts store name and line items + quantities. User confirms items.
-2. **The readout.** Map items to nutrition, total up protein and added sugar, surface best picks and where the added sugar is hiding.
+1. **Scan a receipt or paste a recipe URL.** Quiet entry point — no onboarding, no agent greeting, no app name. One italic heading ("Snap a receipt. Or paste a recipe."), one subtitle explaining what comes back and how fast, then two clearly divided sections: a photo upload zone on top, a URL input below, separated by a thin "or" divider. A first-time user picks one. Both paths converge on the same item-confirmation UI and the same readout.
+   - **Receipt path:** photo goes to LLM vision, extracts store name and line items + quantities.
+   - **Recipe path:** URL goes to a server-side fetch, HTML is passed to the recipe-reader agent, which extracts the recipe title, number of servings, and the ingredient list exactly as written.
+2. **The readout.** Map items/ingredients to nutrition, total up protein and added sugar, surface best picks and where the added sugar is hiding. When the entry was a recipe with more than one serving, the tiles show per-serving alongside totals.
 
-Two steps, nothing else. No household intake, no pantry, no "how many days" input. The app doesn't know your family and doesn't pretend to. It looks at the receipt and tells you what's on it.
+Two steps, nothing else. No household intake, no pantry, no "how many days" input. The app doesn't know your family and doesn't pretend to. It looks at the receipt or the recipe and tells you what's there.
 
 ---
 
@@ -46,9 +48,22 @@ Two steps, nothing else. No household intake, no pantry, no "how many days" inpu
 - **Store identification.** The LLM extracts the store name from the receipt (printed on every receipt). This matters for disambiguation: "Mandarin Chicken" at Trader Joe's is a specific frozen product; at Costco it's a different product with different portions. "Organic Eggs" means 1 dozen at TJ's and 2 dozen at Costco. Store context dramatically improves nutrition accuracy.
 - **Parsed output:** `{ store: "Trader Joe's", items: [{item, qty}] }`. Surface the store name in the UI so the user sees it was identified ("13 items from Trader Joe's").
 - Each item → nutrition estimate. For the prototype, LLM estimation is acceptable. Store context helps the model match items to specific products rather than generic categories.
-- **Confidence scoring.** Each item gets a confidence level (high/medium/low). Medium/low-confidence items are flagged with ⚠ in the item list and called out in the readout as a footnote — not mixed in with the best picks or sugar hiding surfaces.
+- **Confidence scoring.** Each item gets a confidence level (high/medium/low). The bar for "high" is tight: must be within ~15% on all three nutrients. Prepared/composite items (dips, dressings, sauces, spreads) default to medium because the base ingredient swings the numbers 2–3×. Medium/low-confidence items are flagged with ⚠ in the item list and called out in the readout as a footnote — not mixed in with the best picks or sugar hiding surfaces.
 - **Unmappable items:** the agent attempts a web/knowledge search itself before giving up. Only items still ambiguous after that get surfaced to the user for a quick "is this the right thing?" confirmation.
 - **Failure state.** If the vision agent returns an empty or unusable result (photo too dark, cropped, not actually a receipt), show a "couldn't read that — try again" prompt and re-open the camera. No manual item-entry fallback in v0; the demo is the receipt-reading itself, so degrading to a form would hide the thing we're trying to prove works.
+
+---
+
+## Recipe URL → nutrition
+
+A second entry point sits directly below the receipt uploader. The friend-who-found-a-recipe case — "can it do this for a recipe I saw online?" — works identically to the receipt case after the first step.
+
+- **URL input.** A single text field with `https://…` placeholder and a Go button. Enter submits. Server fetches the URL with a real-browser User-Agent, strips `<script>` and `<style>` tags, caps the payload at ~200KB, and hands the HTML to the recipe-reader agent.
+- **Recipe-reader output:** `{ source: "Moroccan Vegetable Tagine", servings: 6, items: [{name, qty: 1, confidence}] }`. Quantities stay embedded in the ingredient name ("1/4 cup extra virgin olive oil") so the downstream nutrition estimator can parse them; `qty` is always 1 for recipe items.
+- **Nutrition estimation** is the same agent as the receipt path. The "store" field gets the recipe title — enough context for the model to treat the ingredient as a recipe quantity rather than a purchased unit.
+- **Per-serving math.** When `servings > 1`, the readout tiles show per-serving alongside total ("87g total · 14g per serving"). Everything else in the readout stays the same — best picks and sugar hiding operate on the whole-recipe totals because the ingredient-level facts (47g protein from the chickpeas, 32g added sugar from the buns) are what the reveal is about, regardless of serving size.
+- **Failure states.** Non-HTML response, 404, timeout, or "not a recipe page" all return a "try a different link" message. The URL input stays on-screen so the user can paste another one.
+- **Out of scope for v0:** JSON-LD / recipe schema extraction, per-ingredient substitutions, scaling the recipe to a different serving count. The recipe-reader reads what's on the page; the rest stays in the reveal frame.
 
 ---
 
@@ -99,10 +114,12 @@ Full item breakdown, with per-item protein / cal / added sugar. High-added-sugar
 **In:**
 
 - Receipt photo → parsed items + store identification
-- Item-level nutrition estimation (with store context)
+- Recipe URL → parsed ingredients + recipe title + serving count
+- Item/ingredient-level nutrition estimation (with store or recipe context)
 - Totals: protein and added sugar
+- Per-serving totals for recipes with servings > 1
 - Item-driven readout: best picks (highest protein, low added sugar) + where the added sugar is hiding (top added-sugar contributors)
-- Two tiles showing raw total protein and total added sugar
+- Two tiles showing total protein and total added sugar, plus per-serving when relevant
 
 **Out (for v0):**
 

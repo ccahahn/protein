@@ -13,6 +13,14 @@ export type ReceiptRead = {
   notes?: string | null;
 };
 
+export type RecipeRead = {
+  source: string;
+  servings: number;
+  items: RawReceiptItem[];
+  unreadable: boolean;
+  notes?: string | null;
+};
+
 export type NutritionItem = {
   name: string;
   qty: number;
@@ -31,6 +39,11 @@ export type Totals = {
 
 export type ReadoutInput = {
   totals: Totals;
+  // Per-serving totals. Only populated for recipes (servings > 1); undefined
+  // for receipts. The readout writer doesn't use these numerically; they're
+  // for the tiles + optional agent mention in the headline.
+  per_serving?: Totals;
+  servings?: number;
   subtitle: string;
   // Best pick CANDIDATES — server provides up to 8 viable items (≥10g protein,
   // <10g added sugar, sorted by protein desc). The agent picks 3 from this
@@ -78,6 +91,8 @@ export type ReadoutOutput = {
   verdict_headline: string;
   subtitle: string;
   totals: Totals;
+  per_serving?: Totals;
+  servings?: number;
   best_picks: {
     item: string;
     protein_g: number;

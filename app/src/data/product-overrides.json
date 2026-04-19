@@ -1,4 +1,67 @@
 {
-  "_comment": "Handpicked store+item → verified nutrition, used as a pre-LLM lookup by the nutrition estimator. Empty for v0 — fill in after demo reveals which items the estimator gets wrong. Shape: { 'Store Name': { 'Item Name (normalized lowercase)': { protein_g, cal, added_sugar_g, per: 'package' | 'unit' } } }",
-  "overrides": {}
+  "_comment": "Handpicked store+item → verified nutrition, used as a pre-LLM lookup by the nutrition estimator. Short-circuits the LLM with label values for items that appear on Cecilia's real receipts. Shape: { 'Store Name': { 'item name (lowercased)': { protein_g, cal, added_sugar_g, per: 'package' | 'unit' } } }. Lookup is case-insensitive (the estimator lowercases before matching).",
+  "_how_to_add": "1. Find the package label. 2. Numbers are for the whole package (per-serving × servings-per-container). 3. 'per: package' returns the number as-is (use when qty=1 on receipt means one package). 'per: unit' multiplies by qty (use for individually-priced items like produce sold 'each'). 4. Key is what the receipt-reader emits. If the receipt-reader keeps verbatim (e.g., 'MAND CHKN'), match verbatim in lowercase. If it expands ('Mandarin Chicken'), use the expanded form. Some items have multiple plausible expansions — add aliases for each.",
+  "_source": "Verified against product labels, transcribed from thinking/golden-test-manual.md on 2026-04-19.",
+  "overrides": {
+    "Trader Joe's": {
+      "salmon": { "protein_g": 69, "cal": 664, "added_sugar_g": 0, "per": "package" },
+      "salmon fillet": { "protein_g": 69, "cal": 664, "added_sugar_g": 0, "per": "package" },
+      "salmon fillet (skin off)": { "protein_g": 69, "cal": 664, "added_sugar_g": 0, "per": "package" },
+      "salmon fillet skin off": { "protein_g": 69, "cal": 664, "added_sugar_g": 0, "per": "package" },
+
+      "ground turkey": { "protein_g": 95, "cal": 750, "added_sugar_g": 0, "per": "package" },
+
+      "boneless chicken thighs": { "protein_g": 109, "cal": 979, "added_sugar_g": 0, "per": "package" },
+      "organic boneless skinless chicken thighs": { "protein_g": 109, "cal": 979, "added_sugar_g": 0, "per": "package" },
+      "boneless skinless chicken thighs": { "protein_g": 109, "cal": 979, "added_sugar_g": 0, "per": "package" },
+
+      "chicken meatballs": { "protein_g": 64, "cal": 600, "added_sugar_g": 0, "per": "package" },
+      "chicken meatballs abf": { "protein_g": 64, "cal": 600, "added_sugar_g": 0, "per": "package" },
+
+      "burrata & prosciutto flatbread": { "protein_g": 39, "cal": 870, "added_sugar_g": 6, "per": "package" },
+      "burrata & prosciutto flatbread pizza": { "protein_g": 39, "cal": 870, "added_sugar_g": 6, "per": "package" },
+
+      "sweet apple chicken sausage": { "protein_g": 55, "cal": 600, "added_sugar_g": 25, "per": "package" },
+      "chicken sausage": { "protein_g": 55, "cal": 600, "added_sugar_g": 25, "per": "package" },
+
+      "sliced white bread": { "protein_g": 44, "cal": 1540, "added_sugar_g": 0, "per": "package" },
+
+      "spizzico di pizza": { "protein_g": 28, "cal": 670, "added_sugar_g": 5, "per": "package" },
+      "pizza cups": { "protein_g": 28, "cal": 670, "added_sugar_g": 5, "per": "package" },
+
+      "family style meat lasagna": { "protein_g": 92, "cal": 1240, "added_sugar_g": 4, "per": "package" },
+      "meat lasagna": { "protein_g": 92, "cal": 1240, "added_sugar_g": 4, "per": "package" },
+
+      "hot spicy jalapeño & cheese balls": { "protein_g": 27, "cal": 1260, "added_sugar_g": 9, "per": "package" },
+      "hot spicy jalapeno & cheese balls": { "protein_g": 27, "cal": 1260, "added_sugar_g": 9, "per": "package" },
+      "hot spicy jalapeno dip": { "protein_g": 27, "cal": 1260, "added_sugar_g": 9, "per": "package" },
+      "jalapeño & cheese balls": { "protein_g": 27, "cal": 1260, "added_sugar_g": 9, "per": "package" },
+
+      "cocoa & peanut butter puffs cereal": { "protein_g": 21, "cal": 1120, "added_sugar_g": 77, "per": "package" },
+      "cocoa & pb puffs cereal": { "protein_g": 21, "cal": 1120, "added_sugar_g": 77, "per": "package" },
+      "cocoa & pb puffs": { "protein_g": 21, "cal": 1120, "added_sugar_g": 77, "per": "package" },
+      "cereal cocoa & pb puffs": { "protein_g": 21, "cal": 1120, "added_sugar_g": 77, "per": "package" },
+      "peanut butter cereal": { "protein_g": 21, "cal": 1120, "added_sugar_g": 77, "per": "package" },
+
+      "tj's organic corn flakes": { "protein_g": 24, "cal": 1280, "added_sugar_g": 8, "per": "package" },
+      "organic corn flakes": { "protein_g": 24, "cal": 1280, "added_sugar_g": 8, "per": "package" },
+      "corn flakes": { "protein_g": 24, "cal": 1280, "added_sugar_g": 8, "per": "package" },
+
+      "organic english cucumber": { "protein_g": 4, "cal": 49, "added_sugar_g": 0, "per": "package" },
+      "english cucumber": { "protein_g": 4, "cal": 49, "added_sugar_g": 0, "per": "package" },
+
+      "sweet jumbo onion": { "protein_g": 3, "cal": 105, "added_sugar_g": 0, "per": "package" },
+      "sweet onion": { "protein_g": 3, "cal": 105, "added_sugar_g": 0, "per": "package" },
+
+      "yellow bell pepper": { "protein_g": 2, "cal": 50, "added_sugar_g": 0, "per": "package" },
+
+      "banana": { "protein_g": 1, "cal": 110, "added_sugar_g": 0, "per": "unit" },
+      "bananas": { "protein_g": 1, "cal": 110, "added_sugar_g": 0, "per": "unit" },
+
+      "freeze dried bananas": { "protein_g": 8, "cal": 540, "added_sugar_g": 0, "per": "package" },
+      "freeze-dried bananas": { "protein_g": 8, "cal": 540, "added_sugar_g": 0, "per": "package" },
+
+      "hamburger buns": { "protein_g": 32, "cal": 1120, "added_sugar_g": 32, "per": "package" }
+    }
+  }
 }
