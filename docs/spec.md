@@ -1,6 +1,6 @@
 # Protein
 
-Turn a grocery receipt into a short, specific narration of what's actually in your cart — your workhorse picks and where the added sugar is hiding.
+Turn a grocery receipt into a short, specific narration of your highest protein items and where the added sugar is hiding.
 
 **[Try the prototype →](https://protein-silk.vercel.app/)**
 
