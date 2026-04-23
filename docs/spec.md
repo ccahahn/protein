@@ -1,3 +1,11 @@
+# Protein
+
+Turn a grocery receipt into a short, specific narration of what's actually in your cart — your workhorse picks and where the added sugar is hiding.
+
+**[Try the prototype →](https://protein-silk.vercel.app/)**
+
+---
+
 ## Problem
 
 You really want your family to eat enough protein, and don't know if two rotisserie chickens will cut it. Or you walk guiltily into the grocery store hungry, confident you'll walk out with way too much sugar. The receipt has the answer but nobody does the math.
